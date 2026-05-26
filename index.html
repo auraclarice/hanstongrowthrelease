@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hanston Wordle — A New Core Value</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #19315B;
+      --navy-deep: #0f1e38;
+      --navy-mid: #1e3d6e;
+      --gold: #C9A84C;
+      --gold-light: #e4c97a;
+      --cream: #F5F0E8;
+      --cream-dark: #e8e1d3;
+      --correct: #2E7D52;
+      --correct-light: #4CAF72;
+      --present: #B07D1A;
+      --absent: #3a4a5c;
+      --tile-border: #c8bfb0;
+      --tile-empty: transparent;
+      --font-display: 'DM Serif Display', serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--cream);
+      color: var(--navy);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    /* Subtle texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(25,49,91,0.08) 0%, transparent 70%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23F5F0E8'/%3E%3Crect x='0' y='0' width='1' height='1' fill='%23e8e0d0' opacity='0.4'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── HEADER ── */
+    header {
+      width: 100%;
+      background: var(--navy);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 24px 16px;
+      position: relative;
+      z-index: 10;
+      box-shadow: 0 2px 20px rgba(15,30,56,0.25);
+    }
+
+    .logo-mark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .logo-h {
+      width: 28px;
+      height: 28px;
+      border: 2px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-h span {
+      font-family: var(--font-display);
+      font-size: 16px;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .brand-name {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold-light);
+    }
+
+    .header-title {
+      font-family: var(--font-display);
+      font-size: clamp(22px, 5vw, 30px);
+      color: var(--cream);
+      letter-spacing: 0.03em;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    .header-subtitle {
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(245,240,232,0.5);
+      margin-top: 4px;
+    }
+
+    /* Thin gold rule */
+    .gold-rule {
+      width: 40px;
+      height: 1.5px;
+      background: var(--gold);
+      margin: 10px auto 0;
+    }
+
+    /* ── MAIN CONTAINER ── */
+    main {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px 16px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      flex: 1;
+    }
+
+    /* ── TOAST ── */
+    #toast-container {
+      position: fixed;
+      top: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--navy);
+      color: var(--cream);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      padding: 10px 20px;
+      border-left: 3px solid var(--gold);
+      box-shadow: 0 4px 20px rgba(15,30,56,0.3);
+      animation: toastIn 0.3s ease, toastOut 0.4s ease 1.6s forwards;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes toastOut {
+      from { opacity: 1; }
+      to { opacity: 0; transform: translateY(-8px); }
+    }
+
+    /* ── HINT ── */
+    .hint-bar {
+      background: var(--navy);
+      color: var(--cream);
+      font-size: 12px;
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 8px 20px;
+      text-align: center;
+      position: relative;
+      width: 100%;
+    }
+
+    .hint-bar em {
+      font-style: italic;
+      color: var(--gold-light);
+      font-family: var(--font-display);
+      font-size: 14px;
+      text-transform: none;
+      letter-spacing: 0.03em;
+    }
+
+    /* ── BOARD ── */
+    #board {
+      display: grid;
+      grid-template-rows: repeat(6, 1fr);
+      gap: 6px;
+      width: 100%;
+      max-width: 330px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+
+    .tile {
+      aspect-ratio: 1;
+      border: 2px solid var(--tile-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: clamp(18px, 5vw, 26px);
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--navy);
+      background: white;
+      transition: border-color 0.1s;
+      position: relative;
+      user-select: none;
+    }
+
+    .tile.filled {
+      border-color: var(--navy);
+      animation: pop 0.1s ease;
+    }
+
+    .tile.empty-active {
+      border-color: var(--navy-mid);
+    }
+
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    .row.shake {
+      animation: shake 0.4s ease;
+    }
+
+    /* Flip animation */
+    .tile.flip {
+      animation: flipTile 0.5s ease forwards;
+    }
+
+    @keyframes flipTile {
+      0% { transform: rotateX(0deg); }
+      49% { transform: rotateX(-90deg); }
+      50% {
+        transform: rotateX(-90deg);
+        background: var(--flip-bg);
+        color: white;
+        border-color: var(--flip-bg);
+      }
+      100% {
+        transform: rotateX(0deg);
+        background: var(--flip-bg);
+        color: white;
+        border-color: var(--flip-bg);
+      }
+    }
+
+    .tile[data-state="correct"] {
+      --flip-bg: var(--correct);
+    }
+
+    .tile[data-state="present"] {
+      --flip-bg: var(--present);
+    }
+
+    .tile[data-state="absent"] {
+      --flip-bg: var(--absent);
+    }
+
+    /* Post-flip static state */
+    .tile.revealed[data-state="correct"] {
+      background: var(--correct);
+      color: white;
+      border-color: var(--correct);
+    }
+
+    .tile.revealed[data-state="present"] {
+      background: var(--present);
+      color: white;
+      border-color: var(--present);
+    }
+
+    .tile.revealed[data-state="absent"] {
+      background: var(--absent);
+      color: white;
+      border-color: var(--absent);
+    }
+
+    /* Win dance */
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-12px); }
+      60% { transform: translateY(-5px); }
+    }
+
+    .tile.win-bounce {
+      animation: bounce 0.5s ease forwards;
+    }
+
+    /* ── KEYBOARD ── */
+    #keyboard {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .kb-row {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .key {
+      height: 54px;
+      min-width: 34px;
+      padding: 0 6px;
+      border: none;
+      border-radius: 0;
+      background: var(--navy);
+      color: var(--cream);
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s, background 0.2s, color 0.2s;
+      flex: 1;
+      max-width: 42px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .key.wide {
+      flex: 1.5;
+      max-width: 62px;
+      font-size: 11px;
+    }
+
+    .key:active { opacity: 0.75; }
+
+    .key[data-state="correct"] {
+      background: var(--correct);
+      color: white;
+    }
+
+    .key[data-state="present"] {
+      background: var(--present);
+      color: white;
+    }
+
+    .key[data-state="absent"] {
+      background: #2a3a4d;
+      color: rgba(245,240,232,0.4);
+    }
+
+    /* ── WIN MODAL ── */
+    #win-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15,30,56,0.75);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    #win-modal.show {
+      display: flex;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-box {
+      background: var(--cream);
+      max-width: 380px;
+      width: 100%;
+      padding: 40px 32px 36px;
+      text-align: center;
+      position: relative;
+      animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 20px 60px rgba(15,30,56,0.4);
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+
+    .modal-headline {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 8vw, 42px);
+      color: var(--navy);
+      line-height: 1.05;
+      margin-bottom: 8px;
+    }
+
+    .modal-word {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 10vw, 56px);
+      color: var(--correct);
+      letter-spacing: 0.15em;
+      margin-bottom: 16px;
+      position: relative;
+      display: inline-block;
+    }
+
+    .modal-word::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--gold);
+    }
+
+    .modal-divider {
+      width: 40px;
+      height: 1.5px;
+      background: var(--cream-dark);
+      margin: 20px auto;
+    }
+
+    .modal-evp {
+      font-size: 13px;
+      font-weight: 300;
+      line-height: 1.7;
+      color: var(--navy);
+      opacity: 0.75;
+      font-style: italic;
+      font-family: var(--font-display);
+    }
+
+    .modal-tagline {
+      margin-top: 16px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .modal-actions {
+      margin-top: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .modal-cta {
+      background: var(--gold);
+      color: var(--navy);
+      border: none;
+      padding: 15px 32px;
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+      text-decoration: none;
+      display: inline-block;
+      width: 100%;
+      text-align: center;
+    }
+
+    .modal-cta:hover {
+      background: var(--gold-light);
+    }
+
+    .modal-play-again {
+      background: transparent;
+      color: var(--navy);
+      border: 1.5px solid var(--cream-dark);
+      padding: 12px 32px;
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      width: 100%;
+    }
+
+    .modal-play-again:hover {
+      border-color: var(--navy);
+    }
+
+    /* ── LOSE MODAL ── */
+    #lose-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15,30,56,0.75);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    #lose-modal.show {
+      display: flex;
+      animation: fadeIn 0.4s ease;
+    }
+
+    /* ── LEGEND ── */
+    .legend {
+      width: 100%;
+      max-width: 330px;
+      padding: 14px 16px;
+      background: white;
+      border-left: 3px solid var(--navy);
+    }
+
+    .legend-title {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--navy);
+      opacity: 0.5;
+      margin-bottom: 10px;
+    }
+
+    .legend-items {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--navy);
+    }
+
+    .legend-dot {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .legend-dot.correct { background: var(--correct); }
+    .legend-dot.present { background: var(--present); }
+    .legend-dot.absent { background: var(--absent); }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 16px;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--navy);
+      opacity: 0.35;
+    }
+
+    /* Confetti */
+    .confetti-piece {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      pointer-events: none;
+      z-index: 600;
+      animation: confettiFall linear forwards;
+    }
+
+    @keyframes confettiFall {
+      0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+
+    @media (max-width: 400px) {
+      .key { min-width: 28px; height: 48px; font-size: 11px; }
+      .key.wide { max-width: 52px; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-mark">
+      <div class="logo-h"><span>H</span></div>
+      <span class="brand-name">Hanston Properties</span>
+    </div>
+    <h1 class="header-title">A New Core Value</h1>
+    <p class="header-subtitle">Can you guess what it is?</p>
+    <div class="gold-rule"></div>
+  </header>
+
+  <div id="toast-container"></div>
+
+  <main>
+    <div class="hint-bar">
+      Hint: <em>Built to Last — Crafted by Hanston</em>
+    </div>
+
+    <div id="board"></div>
+
+    <div class="legend">
+      <div class="legend-title">How to read</div>
+      <div class="legend-items">
+        <div class="legend-item">
+          <div class="legend-dot correct"></div>
+          <span>Correct letter, correct position</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot present"></div>
+          <span>Correct letter, wrong position</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot absent"></div>
+          <span>Letter not in the word</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="keyboard"></div>
+  </main>
+
+  <!-- WIN MODAL -->
+  <div id="win-modal">
+    <div class="modal-box">
+      <div class="modal-eyebrow">New Core Value Revealed</div>
+      <div class="modal-headline">It's all about</div>
+      <div class="modal-word">GROWTH</div>
+      <div class="modal-divider"></div>
+      <div class="modal-evp">
+        "Here at Hanston, careers are built to last —<br/>grounded in clear, honest, and respectful work."
+      </div>
+      <div class="modal-tagline">Built to Last. Crafted by Hanston.</div>
+      <div class="modal-actions">
+        <a class="modal-cta" href="https://acglinoga.my.canva.site/hanston-growth" target="_blank" rel="noopener">
+          Discover Growth →
+        </a>
+        <button class="modal-play-again" onclick="resetGame()">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOSE MODAL -->
+  <div id="lose-modal">
+    <div class="modal-box">
+      <div class="modal-eyebrow">The word was</div>
+      <div class="modal-word">GROWTH</div>
+      <div class="modal-divider"></div>
+      <div class="modal-evp">
+        Growth is Hanston's newest core value —<br/>
+        a commitment to progress, learning, and building careers that last.
+      </div>
+      <div class="modal-tagline">Built to Last. Crafted by Hanston.</div>
+      <div class="modal-actions">
+        <a class="modal-cta" href="https://acglinoga.my.canva.site/hanston-growth" target="_blank" rel="noopener">
+          Discover Growth →
+        </a>
+        <button class="modal-play-again" onclick="resetGame()">Try Again</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>Hanston Properties · People &amp; Culture · 2026</footer>
+
+  <script>
+    const ANSWER = 'GROWTH';
+    const WORD_LENGTH = 6;
+    const MAX_GUESSES = 6;
+
+    // 6-letter word list (common words accepted as guesses)
+    const VALID_WORDS = new Set([
+      'GROWTH','THREAD','GRAINS','THROBS','STRONG','FRONTS','GRANTS','GROATS',
+      'GROUTS','GROTTY','GROUND','GROUPS','GROUSE','GROVEL','GROVES','GROVIE',
+      'BROWSE','PROVEN','FROZEN','BROKEN','BROKER','BRONZE','GROOVE','GROOBY',
+      'THRONE','THRONES','ACROSS','AFFORD','AROUND','BEFORE','BEHIND','BELONG',
+      'BREATH','BRIDGE','BRIGHT','BOTTLE','BUTTON','CANDLE','CASTLE','CHANGE',
+      'CHARGE','CHOOSE','CIRCLE','CLAIMS','CLOUDS','COLOUR','COMING','CORNER',
+      'CREDIT','CUSTOM','DANGER','DECIDE','DEMAND','DESIGN','DIVIDE','DOMAIN',
+      'DOUBLE','ENOUGH','ESCAPE','EVENTS','EXPECT','EXTEND','FASTER','FIGURE',
+      'FINGER','FINISH','FLIGHT','FLOWER','FOLLOW','FORGET','FRIEND','FUTURE',
+      'GARDEN','GATHER','GENTLE','GROUND','HAPPEN','HEALTH','HIGHLY','HONEST',
+      'IMPACT','INCOME','INDEED','INSIDE','INVEST','ISLAND','JOINED','JUNIOR',
+      'KERNEL','LAUNCH','LEADER','LEAVES','LENGTH','LESSON','LIKELY','LISTEN',
+      'LIVING','LONGER','MANAGE','MANNER','MARKET','MATTER','MEMBER','MENTAL',
+      'METHOD','MINUTE','MODERN','MOMENT','MONTHS','MOTHER','MOVING','MUSCLE',
+      'NATURE','NEARLY','NOTICE','OBJECT','OBTAIN','OFFICE','OPTION','OUTPUT',
+      'OTHERS','PARTLY','PEOPLE','PERIOD','PHRASE','PLANET','PLAYER','POCKET',
+      'POLICY','PORTAL','POTTER','POUNDS','PURPLE','PUSHED','RAISED','REALLY',
+      'RECALL','REMAIN','REMOVE','REPAIR','REPEAT','RETURN','REVEAL','REVIEW',
+      'SEARCH','SECOND','SECRET','SECTOR','SENIOR','SERVER','SHOULD','SIGNAL',
+      'SIMPLE','SINGLE','SISTER','SKILLS','SOCIAL','SORTED','SOURCE','SPREAD',
+      'SPRING','STABLE','STAGE','STAGES','STANDS','STATUS','STAYED','STOCKS',
+      'STONES','STORES','STRAIN','STREAM','STREET','STRESS','STRICT','STRUCK',
+      'STUDIO','SUBMIT','SURVEY','SYSTEM','TARGET','TAUGHT','THANKS','THEORY',
+      'THINGS','THINKS','THOUGH','TRYING','TWELVE','UNABLE','UNIQUE','UNITED',
+      'URGENT','USEFUL','VISUAL','VOLUME','WEEKLY','WEIGHT','WORKED','WORLDS',
+      'WORDLE','HARDER','PLANTS','PLACES','OFFERS','NIGHTS','ACROSS','AFFORD',
+      'BOTTLE','BUILDS','CAREER','CHANCE','CHOSEN','CLEVER','CLOSER','CLOUDS',
+      'COMING','CRAFTS','DETAIL','DRIVEN','EMPLOY','ENGAGE','EVERY','EXPERT',
+      'FAMILY','FASTER','FILTER','FORMAL','FOSTER','FREELY','GRAVEL','GUIDED',
+      'HANSON','HASN\'T','HUMBLE','HUSTLE','IMPACT','IMPORT','INFORM','INTENT',
+      'KEEPER','LATEST','LIFTED','LIMITS','LOCATE','LONDON','LONGER','LOOKED',
+      'LOVING','MAINLY','MAKING','MARGIN','MARKED','MASTER','MATURE','MIDDLE',
+      'MISSED','MODERN','MOSTLY','MUTUAL','NARROW','NEARLY','NEEDED','NORMAL',
+      'OCCURS','ONLINE','OPENED','OUTRUN','OVER','BUILDS','CARING','TESTED',
+      'TRUSTS','UPHELD','USEFUL','VALUES','VARIED','VIEWED','VIRTUE','WASTED',
+      'WEALTH','WORKED','WORTHY','YIELDS','ZONING',
+      // Add the answer explicitly
+      'GROWTH'
+    ]);
+
+    let state = {
+      guesses: [],
+      currentGuess: [],
+      currentRow: 0,
+      gameOver: false
+    };
+
+    function init() {
+      buildBoard();
+      buildKeyboard();
+      document.addEventListener('keydown', onKeyDown);
+    }
+
+    function buildBoard() {
+      const board = document.getElementById('board');
+      board.innerHTML = '';
+      for (let r = 0; r < MAX_GUESSES; r++) {
+        const row = document.createElement('div');
+        row.classList.add('row');
+        row.id = `row-${r}`;
+        for (let c = 0; c < WORD_LENGTH; c++) {
+          const tile = document.createElement('div');
+          tile.classList.add('tile');
+          tile.id = `tile-${r}-${c}`;
+          row.appendChild(tile);
+        }
+        board.appendChild(row);
+      }
+    }
+
+    const ROWS = [
+      ['Q','W','E','R','T','Y','U','I','O','P'],
+      ['A','S','D','F','G','H','J','K','L'],
+      ['ENTER','Z','X','C','V','B','N','M','⌫']
+    ];
+
+    function buildKeyboard() {
+      const kb = document.getElementById('keyboard');
+      kb.innerHTML = '';
+      ROWS.forEach(row => {
+        const kbRow = document.createElement('div');
+        kbRow.classList.add('kb-row');
+        row.forEach(k => {
+          const btn = document.createElement('button');
+          btn.classList.add('key');
+          btn.textContent = k;
+          btn.dataset.key = k;
+          if (k === 'ENTER' || k === '⌫') btn.classList.add('wide');
+          btn.addEventListener('click', () => handleKey(k));
+          kbRow.appendChild(btn);
+        });
+        kb.appendChild(kbRow);
+      });
+    }
+
+    function onKeyDown(e) {
+      if (state.gameOver) return;
+      const k = e.key;
+      if (k === 'Enter') handleKey('ENTER');
+      else if (k === 'Backspace') handleKey('⌫');
+      else if (/^[a-zA-Z]$/.test(k)) handleKey(k.toUpperCase());
+    }
+
+    function handleKey(key) {
+      if (state.gameOver) return;
+
+      if (key === '⌫') {
+        if (state.currentGuess.length > 0) {
+          state.currentGuess.pop();
+          updateCurrentRow();
+        }
+        return;
+      }
+
+      if (key === 'ENTER') {
+        submitGuess();
+        return;
+      }
+
+      if (state.currentGuess.length < WORD_LENGTH && /^[A-Z]$/.test(key)) {
+        state.currentGuess.push(key);
+        updateCurrentRow();
+      }
+    }
+
+    function updateCurrentRow() {
+      for (let c = 0; c < WORD_LENGTH; c++) {
+        const tile = document.getElementById(`tile-${state.currentRow}-${c}`);
+        const letter = state.currentGuess[c] || '';
+        tile.textContent = letter;
+        tile.classList.toggle('filled', !!letter);
+        tile.classList.toggle('empty-active', !letter && c === state.currentGuess.length);
+      }
+    }
+
+    function submitGuess() {
+      if (state.currentGuess.length < WORD_LENGTH) {
+        shakeRow(state.currentRow);
+        showToast('Not enough letters');
+        return;
+      }
+
+      const word = state.currentGuess.join('');
+
+      if (!VALID_WORDS.has(word) && word !== ANSWER) {
+        shakeRow(state.currentRow);
+        showToast('Not in word list');
+        return;
+      }
+
+      const result = evaluateGuess(word);
+      state.guesses.push({ word, result });
+      revealRow(state.currentRow, word, result);
+    }
+
+    function evaluateGuess(word) {
+      const result = Array(WORD_LENGTH).fill('absent');
+      const answerArr = ANSWER.split('');
+      const wordArr = word.split('');
+      const used = Array(WORD_LENGTH).fill(false);
+
+      // First pass: correct
+      for (let i = 0; i < WORD_LENGTH; i++) {
+        if (wordArr[i] === answerArr[i]) {
+          result[i] = 'correct';
+          used[i] = true;
+        }
+      }
+
+      // Second pass: present
+      for (let i = 0; i < WORD_LENGTH; i++) {
+        if (result[i] === 'correct') continue;
+        for (let j = 0; j < WORD_LENGTH; j++) {
+          if (!used[j] && wordArr[i] === answerArr[j]) {
+            result[i] = 'present';
+            used[j] = true;
+            break;
+          }
+        }
+      }
+
+      return result;
+    }
+
+    function revealRow(rowIdx, word, result) {
+      const DELAY = 300;
+      for (let c = 0; c < WORD_LENGTH; c++) {
+        const tile = document.getElementById(`tile-${rowIdx}-${c}`);
+        setTimeout(() => {
+          tile.dataset.state = result[c];
+          tile.classList.add('flip');
+          tile.addEventListener('animationend', () => {
+            tile.classList.remove('flip');
+            tile.classList.add('revealed');
+          }, { once: true });
+        }, c * DELAY);
+      }
+
+      const allDone = (WORD_LENGTH - 1) * DELAY + 600;
+      setTimeout(() => {
+        updateKeyboard(word, result);
+        const won = result.every(r => r === 'correct');
+        if (won) {
+          state.gameOver = true;
+          bounceWin(rowIdx);
+          setTimeout(() => {
+            launchConfetti();
+            document.getElementById('win-modal').classList.add('show');
+          }, 1000);
+        } else {
+          state.currentRow++;
+          state.currentGuess = [];
+          if (state.currentRow >= MAX_GUESSES) {
+            state.gameOver = true;
+            setTimeout(() => {
+              document.getElementById('lose-modal').classList.add('show');
+            }, 600);
+          }
+        }
+      }, allDone);
+    }
+
+    function bounceWin(rowIdx) {
+      for (let c = 0; c < WORD_LENGTH; c++) {
+        setTimeout(() => {
+          const tile = document.getElementById(`tile-${rowIdx}-${c}`);
+          tile.classList.add('win-bounce');
+        }, c * 80);
+      }
+    }
+
+    function updateKeyboard(word, result) {
+      const PRIORITY = { correct: 3, present: 2, absent: 1 };
+      word.split('').forEach((letter, i) => {
+        const btn = document.querySelector(`.key[data-key="${letter}"]`);
+        if (!btn) return;
+        const curr = btn.dataset.state;
+        if (!curr || PRIORITY[result[i]] > PRIORITY[curr]) {
+          btn.dataset.state = result[i];
+        }
+      });
+    }
+
+    function shakeRow(rowIdx) {
+      const row = document.getElementById(`row-${rowIdx}`);
+      row.classList.add('shake');
+      row.addEventListener('animationend', () => row.classList.remove('shake'), { once: true });
+    }
+
+    function showToast(msg) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.classList.add('toast');
+      toast.textContent = msg;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 2100);
+    }
+
+    function launchConfetti() {
+      const COLORS = ['#19315B','#C9A84C','#2E7D52','#e4c97a','#1e3d6e'];
+      for (let i = 0; i < 60; i++) {
+        const c = document.createElement('div');
+        c.classList.add('confetti-piece');
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.top = '-10px';
+        c.style.background = COLORS[Math.floor(Math.random() * COLORS.length)];
+        c.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+        c.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+        c.style.animationDelay = Math.random() * 0.8 + 's';
+        c.style.width = c.style.height = (6 + Math.random() * 8) + 'px';
+        document.body.appendChild(c);
+        c.addEventListener('animationend', () => c.remove());
+      }
+    }
+
+    function resetGame() {
+      document.getElementById('win-modal').classList.remove('show');
+      document.getElementById('lose-modal').classList.remove('show');
+      state = { guesses: [], currentGuess: [], currentRow: 0, gameOver: false };
+      buildBoard();
+      buildKeyboard();
+    }
+
+    // Close modals on backdrop click
+    ['win-modal','lose-modal'].forEach(id => {
+      document.getElementById(id).addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('show');
+      });
+    });
+
+    init();
+  </script>
+</body>
+</html>
